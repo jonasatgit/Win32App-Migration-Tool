@@ -1,28 +1,3 @@
-<#
-.Synopsis
-Created on:   11/11/2023
-Created by:   Ben Whitmore
-Filename:     New-IntuneWin.ps1
-
-.Description
-Function to create a .intunewin file
-
-.PARAMETER LogId
-The component (script name) passed as LogID to the 'Write-Log' function. 
-This parameter is built from the line number of the call from the function up the pipeline
-
-.PARAMETER ContentFolder
-The folder containing the content to be packaged
-
-.PARAMETER OutputFolder
-The folder to output the .intunewin file to
-
-.PARAMETER SetupFile
-The setup file to be used for packaging. Normally the .msi, .exe or .ps1 file used to install the application
-
-.PARAMETER OverrideIntuneWin32FileName
-Override intunewin filename. Default is the name calcualted from the install command line
-#>
 function New-IntuneWin {
     param(
         [Parameter(Mandatory = $false, ValuefromPipeline = $false, HelpMessage = 'The component (script name) passed as LogID to the Write-Log function')]
@@ -79,8 +54,9 @@ function New-IntuneWin {
                 "`"$OutputFolder`""
                 '-q'
             )
+            write-host $commandToUse
             Start-Process -FilePath (Join-Path -Path "$workingFolder_Root\ContentPrepTool" -ChildPath "IntuneWinAppUtil.exe") -ArgumentList $arguments -Wait
-        
+                    
         }
         catch {
             Write-Log -Message ("An error was encountered when attempting to create a intunewin file at '{0}'" -f $OutputFolder) -LogId $LogId -Severity 3
@@ -89,7 +65,12 @@ function New-IntuneWin {
         }
 
         # Check if the intunewin file was created
-        $fileToCheck = $commandToUse -replace '\..*', '.intunewin'
+        Write-Host "CommandToUse = $($commandtouse)"
+        $fileToCheck = $commandToUse -replace ".{4}$", '.intunewin'
+
+        $null = $Global:IWFilePath
+        $Global:IWFilePath = $OutputFolder+"\"+$fileToCheck
+        Write-host "IntuneWinFile located:" $OutputFolder"\"$fileToCheck
 
         if (Test-Path -Path "$OutputFolder\$fileToCheck" ) {
             Write-Log -Message ("Successfully created intunewin file '{0}' at '{1}'" -f $fileToCheck, $OutputFolder) -LogId $LogId 
@@ -126,6 +107,7 @@ function New-IntuneWin {
             Write-Log -Message ("The content prep tool ran succesfully but failed to create an intunewin file at '{0}'" -f $OutputFolder)  -LogId $LogId
             Write-Warning -Message ("The content prep tool ran succesfully but failed to create an intunewin file at '{0}'" -f $OutputFolder)
             Write-Log -Message ("'{0}'" -f $_.Exception.Message) -LogId $LogId -Severity 3
+            Write-Host $_.Exception.Message
             throw
         }
     }

@@ -1,19 +1,3 @@
-<#
-.Synopsis
-Created on:   28/10/2023
-Created by:   Ben Whitmore
-Filename:     Get-AppInfo.ps1
-
-.Description
-Function to get application information from ConfigMgr
-
-.PARAMETER LogId
-The component (script name) passed as LogID to the 'Write-Log' function. 
-This parameter is built from the line number of the call from the function up the
-
-.PARAMETER ApplicationName
-The name of the application to get information for
-#>
 function Get-AppInfo {
     param (
         [Parameter(Mandatory = $false, ValuefromPipeline = $false, HelpMessage = "The component (script name) passed as LogID to the 'Write-Log' function")]
@@ -47,7 +31,7 @@ function Get-AppInfo {
                 # Grab the SDMPackgeXML which contains the application details
                 Write-Log -Message ("Invoking Get-CMApplication where Id equals '{0}' for application '{1}'" -f $application.Id, $application.LocalizedDisplayName) -LogId $LogId
                 Write-Host ("Invoking Get-CMApplication where Id equals '{0}' for application '{1}'" -f $application.Id, $application.LocalizedDisplayName) -ForegroundColor Cyan
-                $xmlPackage = Get-CMApplication -Id $application.Id | Where-Object { $null -ne $_.SDMPackageXML } | Select-Object -ExpandProperty SDMPackageXML
+                $xmlPackage = Get-CMApplication -Id $Application.Id | Where-Object { $null -ne $_.SDMPackageXML } | Select-Object -ExpandProperty SDMPackageXML
         
                 # Prepare xml from SDMPackageXML
                 $xmlContent = [xml]($xmlPackage)

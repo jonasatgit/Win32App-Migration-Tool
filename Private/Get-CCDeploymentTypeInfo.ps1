@@ -1,20 +1,4 @@
-<#
-.Synopsis
-Created on:   28/10/2023
-Created by:   Ben Whitmore
-Filename:     Get-DeploymentTypeInfo.ps1
-
-.Description
-Function to get deployment type information from ConfigMgr
-
-.PARAMETER LogId
-The component (script name) passed as LogID to the 'Write-Log' function. 
-This parameter is built from the line number of the call from the function up the
-
-.PARAMETER ApplicationId
-The CI_ID of the application to get deployment type information for
-#>
-function Get-DeploymentTypeInfo {
+function Get-CCDeploymentTypeInfo {
     param (
         [Parameter(Mandatory = $false, ValuefromPipeline = $false, HelpMessage = "The component (script name) passed as LogID to the 'Write-Log' function")]
         [string]$LogId = $($MyInvocation.MyCommand).Name,
@@ -25,6 +9,7 @@ function Get-DeploymentTypeInfo {
 
         # Create an empty array to store the deployment type information
         $deploymentTypes = @()
+        . Get-CCAppDetectionDetails -ApplicationId $ApplicationID -FilePath $workingFolder_Root 
     }
     process {
 
@@ -58,6 +43,11 @@ function Get-DeploymentTypeInfo {
                         $uninstallLocation = $object.Installer.Contents.Content.Location
                     }
 
+
+                    # Check and see if there are multiple deployment types
+                    $DMCount = ($DTListData).Count
+                    Write-Host $xmlContent.AppMgmtDigest.Application.title.'#text' "Has $($DMCount) Detection Methods"
+
                     # Create a new custom hashtable to store Deployment type details
                     $deploymentObject = [PSCustomObject]@{}
 
@@ -76,23 +66,64 @@ function Get-DeploymentTypeInfo {
                     $deploymentObject | Add-Member NoteProperty -Name UninstallCommandLine -Value $Object.Installer.CustomData.UninstallCommandLine
                     $deploymentObject | Add-Member NoteProperty -Name ExecuteTime -Value $Object.Installer.CustomData.ExecuteTime
                     $deploymentObject | Add-Member NoteProperty -Name MaxExecuteTime -Value $Object.Installer.CustomData.MaxExecuteTime
-                
-                    Write-Log -Message ("Application_Id = '{0}', Application_Name = '{1}', Application_LogicalName = '{2}', LogicalName = '{3}', Name = '{4}', Technology = '{5}', ExecutionContext = '{6}', InstallContext = '{7}', `
-                 InstallCommandLine = '{8}', UninstallSetting = '{9}', UninstallContent = '{10}', UninstallCommandLine = '{11}', ExecuteTime = '{12}', MaxExecuteTime = '{13}'" -f `
-                            $ApplicationId, `
-                            $xmlContent.AppMgmtDigest.Application.title.'#text', `
-                            $xmlContent.AppMgmtDigest.Application.LogicalName, `
-                            $object.LogicalName, `
-                            $object.Title.InnerText, `
-                            $object.Installer.Technology, `
-                            $object.Installer.ExecutionContext, `
-                            $installLocation, `
-                            $object.Installer.CustomData.InstallCommandLine, `
-                            $object.Installer.CustomData.UnInstallSetting, `
-                            $uninstallLocation, `
-                            $object.Installer.CustomData.UninstallCommandLine, `
-                            $object.Installer.CustomData.ExecuteTime, `
-                            $object.Installer.CustomData.MaxExecuteTime) -LogId $LogId
+                    $deploymentObject | Add-Member NoteProperty -Name DetectionMethod -Value $DTSection
+
+                    $Global:DetectMethod0 = $null
+                    $Global:DetectMethod1 = $null
+                    $Global:DetectMethod2 = $null
+                    $Global:DetectMethod3 = $null
+                    $Global:DetectMethod4 = $null
+                    $Global:DetectMethod5 = $null
+                    $Global:DetectMethod6 = $null
+                    $Global:DetectMethod7 = $null
+                    $Global:DetectMethod8 = $null
+                    $Global:DetectMethod9 = $null
+
+                    If ($DMCount -gt 1) {
+                        $deploymentObject | Add-Member NoteProperty -Name DetectionData0 -Value ($DTListData)[0]
+                        $Global:DetectMethod0 = ($DTListData)[0]
+
+                        if ($($DTListData)[1]) { 
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData1 -Value ($DTListData)[1] 
+                            $Global:DetectMethod1 = ($DTListData)[1]
+                        }
+                        if ($($DTListData)[2]) { 
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData2 -Value ($DTListData)[2]
+                            $Global:DetectMethod2 = ($DTListData)[2]
+                        }
+                        if ($($DTListData)[3]) {
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData3 -Value ($DTListData)[3]
+                            $Global:DetectMethod3 = ($DTListData)[3]
+                        }
+                        if ($($DTListData)[4]) {
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData4 -Value ($DTListData)[4]
+                            $Global:DetectMethod4 = ($DTListData)[4]
+                        }
+                        if ($($DTListData)[5]) {
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData5 -Value ($DTListData)[5]
+                            $Global:DetectMethod5 = ($DTListData)[5]
+                        }
+                        if ($($DTListData)[6]) {
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData6 -Value ($DTListData)[6]
+                            $Global:DetectMethod6 = ($DTListData)[6]
+                        }
+                        if ($($DTListData)[7]) {
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData7 -Value ($DTListData)[7]
+                            $Global:DetectMethod7 = ($DTListData)[7]
+                        }
+                        if ($($DTListData)[8]) {
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData8 -Value ($DTListData)[8]
+                            $Global:DetectMethod8 = ($DTListData)[8]
+                        }
+                        if ($($DTListData)[9]) {
+                            $deploymentObject | Add-Member NoteProperty -Name DetectionData9 -Value ($DTListData)[9]
+                            $Global:DetectMethod9 = ($DTListData)[9]
+                        }
+                    }
+                    Else {
+                        $deploymentObject | Add-Member NoteProperty -Name DetectionData0 -Value ($DTListData)
+                        $Global:DetectMethod0 = $DTListData
+                    }
 
                     # Output the deployment type object
                     Write-Host "`n$deploymentObject`n" -ForegroundColor Green
