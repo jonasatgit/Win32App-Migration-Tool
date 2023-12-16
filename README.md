@@ -1,3 +1,15 @@
+**Update 12/15/2023 - Casey Clifton
+
+I have combined Win32App-Migration-Tool with IntuneWin32App (https://github.com/MSEndpointMgr/IntuneWin32App) and created detection method functions to allow a fully automated method to upload ConfigMgr apps to your Intune tenant.
+Most of the code in the detection methods functions came from Paul Wetters DocumentCMCB (https://github.com/paulwetter/DocumentConfigMgrCB)
+
+MSAL.PS, IntuneWin32App, and Connect-MSIntuneGraph will be installed by the script.
+You must have the appropriate access in both ConfigMgr and Intune.
+
+Example: New-Win32App -SiteCode 'ABC' -ProviderMachineName 'siteserver' -AppName 'google chrome' -TenantID 'tenantid' -DownloadContent -CreateApps -ExportIcon
+
+____________________________________________________________________________________________________________________________________________________________________
+
 # Win32App Migration Tool
 
  ![alt text](https://byteben.com/bb/Downloads/GitHub/Win32AppMigrationTool_10.jpg)  
