@@ -103,7 +103,7 @@ function New-Win32App {
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, Position = 3, HelpMessage = 'The working folder for the Win32AppMigration Tool. Care should be given when specifying the working folder because downloaded content can increase the working folder size considerably')]
         [string]$workingFolder = "C:\Win32AppMigrationTool",
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, HelpMessage = 'PackageApps: Pass this parameter to package selected apps in the .intunewin format')]
-        [Bool]$PackageApps=$True,
+        [Bool]$PackageApps = $True,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, HelpMessage = 'CreateApps: Pass this parameter to create the Win32apps in Intune')]
         [Switch]$CreateApps,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, HelpMessage = 'ResetLog: Pass this parameter to reset the log file')]
@@ -119,13 +119,13 @@ function New-Win32App {
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, Position = 6, HelpMessage = 'Override intunewin filename. Default is the name calcualted from the install command line')]
         [string]$OverrideIntuneWin32FileName,
         [Parameter(Mandatory = $False, Position = 7, HelpMessage = 'Add a default publisher in case the application does not have one.')]
-	    [string]$Publisher='Default',
+        [string]$Publisher = 'Default',
         [Parameter(Mandatory = $False, Position = 8, HelpMessage = 'Add a default description in case the application does not have one.')]
-	    [string]$Description='Default',
+        [string]$Description = 'Default',
         [Parameter(Mandatory = $True, Position = 9, HelpMessage = 'The Tenant ID of the Azure AD Tenant')]
-	    [string]$TenantID,
+        [string]$TenantID,
         [Parameter(Mandatory = $false, Position = 10, HelpMessage = 'UploadtoIntune: Pass this parameter to upload your app to Intune.')]
-	    [Switch]$UploadtoIntune
+        [Switch]$UploadtoIntune
 
     )
 
@@ -157,7 +157,6 @@ function New-Win32App {
     $user = [Security.Principal.WindowsIdentity]::GetCurrent();
     $ISElevated = (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 
-
     #Check for MSAL.PS and install if not present
     $GIM = get-installedmodule 
 
@@ -174,8 +173,8 @@ function New-Win32App {
         }
     }
     Else {
-            Write-Log -Message "MSAL.PS Module already installed." -LogId $LogId
-            Write-Host "MSAL.PS Module already installed." -ForegroundColor Green
+        Write-Log -Message "MSAL.PS Module already installed." -LogId $LogId
+        Write-Host "MSAL.PS Module already installed." -ForegroundColor Green
     }
         
     #Check for IntuneWin32App and install if not present
@@ -192,8 +191,8 @@ function New-Win32App {
         }
     }
     Else {
-            Write-Log -Message "IntuneWin32App Module already installed." -LogId $LogId
-            Write-Host "IntuneWin32App Module already installed." -ForegroundColor Green
+        Write-Log -Message "IntuneWin32App Module already installed." -LogId $LogId
+        Write-Host "IntuneWin32App Module already installed." -ForegroundColor Green
     }
        
     #I like my path to return to its original location post script execution
@@ -214,7 +213,7 @@ function New-Win32App {
     #region Create_Folders
     Write-Host "Creating additional folders..." -ForegroundColor Cyan
     Write-Log -Message ("New-FolderToCreate -Root '{0}' -FolderNames @('Icons', 'Content', 'ContentPrepTool', 'Details', 'Win32Apps','ScriptExport')" -f $workingFolder_Root) -LogId $LogId
-    New-FolderToCreate -Root $workingFolder_Root -FolderNames @('Icons', 'Content', 'ContentPrepTool', 'Details', 'Win32Apps','ScriptExport')
+    New-FolderToCreate -Root $workingFolder_Root -FolderNames @('Icons', 'Content', 'ContentPrepTool', 'Details', 'Win32Apps', 'ScriptExport')
     #endRegion
 
     #region Get_Content_Tool
@@ -333,9 +332,10 @@ function New-Win32App {
         $paramsToPassContent = @{}
         
         if ($deploymentType.InstallContent) { $paramsToPassContent.Add('InstallContent', $deploymentType.InstallContent) }
-        # I've found some apps don't this setting populated so we are setting SameAsInstall if Null
+        # I've found some apps don't have this setting populated so we are setting SameAsInstall if Null
         if ($Null -eq $deploymentType.UninstallSetting) { 
             $paramsToPassContent.Add('UninstallSetting', "SameAsInstall")
+            Write-Log "UninstallSetting was null. Setting to SameAsInstall" -LogId $LogId -Severity 2
         }
         else {
             $paramsToPassContent.Add('UninstallSetting', $deploymentType.UninstallSetting)
@@ -384,15 +384,15 @@ function New-Win32App {
 
     # Export application information to CSV for reference
     Export-CsvDetails -Name 'Applications' -Data $app_Array -Path $detailsFolder
-    $appfile = $detailsFolder+'\Applications.csv'
+    $appfile = $detailsFolder + '\Applications.csv'
 
     # Export deployment type information to CSV for reference
     Export-CsvDetails -Name 'DeploymentTypes' -Data $deploymentTypes_Array -Path $detailsFolder
-    $dtfile = $detailsFolder+'\DeploymentTypes.csv'
+    $dtfile = $detailsFolder + '\DeploymentTypes.csv'
 
     # Export content information to CSV for reference
     Export-CsvDetails -Name 'Content' -Data $content_Array -Path $detailsFolder
-    $sourcefile = $detailsFolder+'\Content.csv'
+    $sourcefile = $detailsFolder + '\Content.csv'
     #endregion
 
     #region Exporting_Logos
@@ -415,147 +415,143 @@ function New-Win32App {
         Write-Log -Message "The 'ExportIcon' parameter was not passed. Skipping icon export" -LogId $LogId -Severity 2
         Write-Host "The 'ExportIcon' parameter was not passed. Skipping icon export" -ForegroundColor Yellow
     }
+    #endregion
+
+    #region Package_Apps
+    if ($PackageApps) {
+
+        # If the $PackageApps parameter was passed. Use the Win32Content Prep Tool to build Intune.win files
+        Write-Log -Message "The 'PackageApps' Parameter passed" -LogId $LogId
+        New-VerboseRegion -Message 'Creating intunewin file(s)' -ForegroundColor 'Gray'
+
+        foreach ($content in $content_Array) {
+
+            Write-Log -Message ("Working on application '{0}'..." -f $content.Application_Name) -LogId $LogId
+            Write-Host ("`nWorking on application '{0}'..." -f $content.Application_Name) -ForegroundColor Cyan
+
+            # Create the Win32app folder for the .intunewin files
+            New-FolderToCreate -Root "$workingFolder_Root\Win32Apps" -FolderNames $content.Win32app_Destination
     
-   
-        #endregion
-
-        #region Package_Apps
-        if ($PackageApps) {
-
-            # If the $PackageApps parameter was passed. Use the Win32Content Prep Tool to build Intune.win files
-            Write-Log -Message "The 'PackageApps' Parameter passed" -LogId $LogId
-            New-VerboseRegion -Message 'Creating intunewin file(s)' -ForegroundColor 'Gray'
-
-            foreach ($content in $content_Array) {
-
-                Write-Log -Message ("Working on application '{0}'..." -f $content.Application_Name) -LogId $LogId
-                Write-Host ("`nWorking on application '{0}'..." -f $content.Application_Name) -ForegroundColor Cyan
-
-                # Create the Win32app folder for the .intunewin files
-                New-FolderToCreate -Root "$workingFolder_Root\Win32Apps" -FolderNames $content.Win32app_Destination
+            # Create intunewin files
+            Write-Log -Message ("Creating intunewin file for the deployment type '{0}' for app '{1}'" -f $content.DeploymentType_Name, $content.Application_Name) -LogId $LogId
+            Write-Host ("Creating intunewin file for the deployment type '{0}' for app '{1}'" -f $content.DeploymentType_Name, $content.Application_Name)  -ForegroundColor Cyan
         
-                # Create intunewin files
-                Write-Log -Message ("Creating intunewin file for the deployment type '{0}' for app '{1}'" -f $content.DeploymentType_Name, $content.Application_Name) -LogId $LogId
-                Write-Host ("Creating intunewin file for the deployment type '{0}' for app '{1}'" -f $content.DeploymentType_Name, $content.Application_Name)  -ForegroundColor Cyan
-            
-                # Build parameters to splat at the New-IntuneWin function
-                $paramsToPassIntuneWin = @{}
-                $paramsToPassIntuneWin.Add('ContentFolder', $content.Install_Destination)
-                $paramsToPassIntuneWin.Add('OutputFolder', (Join-Path -Path "$workingFolder_Root\Win32Apps" -ChildPath $content.Win32app_Destination))
-                $paramsToPassIntuneWin.Add('SetupFile', $content.Install_CommandLine)
-                if ($OverrideIntuneWin32FileName) { $paramsToPassIntuneWin.Add('OverrideIntuneWin32FileName', $OverrideIntuneWin32FileName) }
+            # Build parameters to splat at the New-IntuneWin function
+            $paramsToPassIntuneWin = @{}
+            $paramsToPassIntuneWin.Add('ContentFolder', $content.Install_Destination)
+            $paramsToPassIntuneWin.Add('OutputFolder', (Join-Path -Path "$workingFolder_Root\Win32Apps" -ChildPath $content.Win32app_Destination))
+            $paramsToPassIntuneWin.Add('SetupFile', $content.Install_CommandLine)
+            if ($OverrideIntuneWin32FileName) { $paramsToPassIntuneWin.Add('OverrideIntuneWin32FileName', $OverrideIntuneWin32FileName) }
 
-                # Create the .intunewin file
-                New-IntuneWin @paramsToPassIntuneWin
-            }
+            # Create the .intunewin file
+            New-IntuneWin @paramsToPassIntuneWin
+        }
+    }
+    else {
+        Write-Log -Message "The 'PackageApps' parameter was not passed. Intunewin files will not be created" -LogId $LogId -Severity 2
+        Write-Host "The 'PackageApps' parameter was not passed. Intunewin files will not be created" -ForegroundColor Yellow
+    }
+    #endRegion
+
+    #region UploadtoIntune
+    If ($UploadtoIntune) {
+
+        New-VerboseRegion -Message "Beginning Upload to Intune." -ForegroundColor 'Gray'
+
+        Write-Log -Message "Importing CSV's and setting them to variables" -LogId $LogId
+        $Defaultapps = Import-CSV $appfile
+        $Defaultappssource = Import-CSV $sourcefile
+        #NEED to add a loop to pick up any other lines in the csv files
+        $Defaultappsdt = Import-CSV $dtfile | select-object -First 1
+        $ImageFile = $Defaultapps.IconPath
+
+        If ($Imagefile) {
+            $Icon = New-IntuneWin32AppIcon -FilePath $ImageFile
+        }
+
+        #Detection Rules are hard
+        $DetNum = ($Defaultappsdt | findstr /i "detectiondata").count
+
+        Write-Log -Message "App has $($DetNum) Detection Methods." -LogId $LogId
+        Write-Host "App has $($DetNum) Detection Methods."
+        Write-Log -Message "Looping through each method" -LogId $LogId
+        Write-Host "Looping through each method"
+
+        ## Need to see if New-IntuneWin can handle multiple detection methods. There is a function to add addtional detection methods
+        Write-Log -Message "Creating Least Restrictive Requirement Rule"  -LogId $LogId
+        $RequirementRule = New-IntuneWin32AppRequirementRule -Architecture All -MinimumSupportedWindowsRelease 1607 -MinimumFreeDiskSpaceInMB 100 -MinimumMemoryInMB 100 -MinimumNumberOfProcessors 1 -MinimumCPUSpeedInMHz 100
+
+        Write-Host ""
+        Write-Host "Running Build-DetectionData" -ForegroundColor Magenta
+        Write-Host ""
+
+        Write-Log -Message "Calling 'GetDetectData' function to gather data for Win32App" -LogId $LogId
+
+        #Need to add switches to Build-DetectionData            
+        $GetDetectData = Build-DetectionData
+        $CB32 = $GetDetectData.Check32BitOn64System
+
+        ## Gather
+        Write-Log -Message "Calling 'Gather-Data' function to gather data for Win32App" -LogId $LogId
+        $DetectionRuleFile = Gather-Data -data $GetDetectData
+
+        #$Filepath comes from New-IntuneWin (Currently requires the packageapp switch)
+        Write-Log -Message "Filepath=$($IWFilePath)" -LogId $LogId
+        $Filepath = $IWFilePath
+
+        Write-Log -Message "Details for DetectionRule:"
+        Write-Log -Message "Description=$($Description)" -LogId $LogId
+        Write-Log -Message "Publisher=$($Publisher)" -LogId $LogId
+        Write-Log -Message "DetectionRule=$($DetectionRuleFile)" -LogId $LogId
+        Write-Log -Message "RequirementRule=$($RequirementRule)" -LogId $LogId
+
+        Write-Log -Message "Checking for Install and Uninstall Command Lines" -LogId $LogId
+        $InstallCommandLine = $Defaultappsdt.InstallCommandLine
+        Write-Log -Message "Install Commandline is: $($InstallCommandLine)"
+
+        # This will set a default uninstall command if one is not present in the application.
+        If ($Defaultappsdt.UninstallCommandLine -eq "") {
+            Write-Log "No uninstall command found. Making uninstall command equal to Install command. Manual intervention will be needed if a genuine uninstall command is needed." -LogId $LogId -Severity 2
+            $UninstallCommandLine = $Defaultappsdt.InstallCommandLine
+        }
+        Else {
+            $UninstallCommandLine = $Defaultappsdt.UninstallCommandLine
+        } 
+        Write-Log -Message "Uninstall Commandline is: $($UninstallCommandLine)" -LogId $LogId
+
+        Write-Log -Message "Setting path back to scriptroot and calling Connect-MSIntuneGraph" -LogId $LogId
+        Write-Host "Setting path back to scriptroot and calling Connect-MSIntuneGraph"
+        Set-Location $StartingPoint
+        Connect-MSIntuneGraph -TenantID $TenantID
+
+        Write-Log -Message "Gathering Additional App Details" -LogId $LogId
+        # This will set defaults for description and publisher if one is not present in the application.
+        If ($Defaultapps.Description -like "" -or $null -eq $Defaultapps.Description) {
+            $Description = "Default"
         }
         else {
-            Write-Log -Message "The 'PackageApps' parameter was not passed. Intunewin files will not be created" -LogId $LogId -Severity 2
-            Write-Host "The 'PackageApps' parameter was not passed. Intunewin files will not be created" -ForegroundColor Yellow
+            $Description = $Defaultapps.Description
         }
-        #endRegion
-
-
-        #region UploadtoIntune
-        If ($UploadtoIntune) {
-
-            New-VerboseRegion -Message "Beginning Upload to Intune." -ForegroundColor 'Gray'
-
-            Write-Log -Message "Importing CSV's and setting them to variables" -LogId $LogId
-            $Defaultapps = Import-CSV $appfile
-            $Defaultappssource = Import-CSV $sourcefile
-            #NEED to add a loop to pick up any other lines in the csv files
-            $Defaultappsdt = Import-CSV $dtfile | select-object -First 1
-            $ImageFile = $Defaultapps.IconPath
-
-            If ($Imagefile) {
-                $Icon = New-IntuneWin32AppIcon -FilePath $ImageFile
-            }
-
-            #Detection Rules are hard
-            $DetNum = ($Defaultappsdt | findstr /i "detectiondata").count
-
-            Write-Log -Message "App has $($DetNum) Detection Methods." -LogId $LogId
-            Write-Host "App has $($DetNum) Detection Methods."
-            Write-Log -Message "Looping through each method" -LogId $LogId
-            Write-Host "Looping through each method"
-
-            ## Need to see if New-IntuneWin can handle multiple detection methods. There is a function to add addtional detection methods
-            Write-Log -Message "Creating Least Restrictive Requirement Rule"  -LogId $LogId
-            $RequirementRule = New-IntuneWin32AppRequirementRule -Architecture All -MinimumSupportedWindowsRelease 1607 -MinimumFreeDiskSpaceInMB 100 -MinimumMemoryInMB 100 -MinimumNumberOfProcessors 1 -MinimumCPUSpeedInMHz 100
-
-            Write-Host ""
-            Write-Host "Running Build-DetectionData" -ForegroundColor Magenta
-            Write-Host ""
-
-            Write-Log -Message "Calling 'GetDetectData' function to gather data for Win32App" -LogId $LogId
-
-            #Need to add switches to Build-DetectionData            
-            $GetDetectData = Build-DetectionData
-            $CB32 = $GetDetectData.Check32BitOn64System
-
-            ## Gather
-            Write-Log -Message "Calling 'Gather-Data' function to gather data for Win32App" -LogId $LogId
-            $DetectionRuleFile = Gather-Data -data $GetDetectData
-
-            #$Filepath comes from New-IntuneWin (Currently requires the packageapp switch)
-            Write-Log -Message "Filepath=$($IWFilePath)" -LogId $LogId
-            $Filepath = $IWFilePath
-
-            Write-Log -Message "Details for DetectionRule:"
-            Write-Log -Message "Description=$($Description)" -LogId $LogId
-            Write-Log -Message "Publisher=$($Publisher)" -LogId $LogId
-            Write-Log -Message "DetectionRule=$($DetectionRuleFile)" -LogId $LogId
-            Write-Log -Message "RequirementRule=$($RequirementRule)" -LogId $LogId
-
-            Write-Log -Message "Checking for Install and Uninstall Command Lines" -LogId $LogId
-            $InstallCommandLine = $Defaultappsdt.InstallCommandLine
-            Write-Log -Message "Install Commandline is: $($InstallCommandLine)"
-
-            # This will set a default uninstall command if one is not present in the application.
-            If ($Defaultappsdt.UninstallCommandLine -eq "") {
-                Write-Log "No uninstall command found. Making uninstall command equal to Install command. Manual intervention will be needed if a genuine uninstall command is needed." -LogId $LogId -Severity 2
-                $UninstallCommandLine = $Defaultappsdt.InstallCommandLine
-            }
-            Else {
-                $UninstallCommandLine = $Defaultappsdt.UninstallCommandLine
-            } 
-            Write-Log -Message "Uninstall Commandline is: $($UninstallCommandLine)" -LogId $LogId
-
-            Write-Log -Message "Setting path back to scriptroot and calling Connect-MSIntuneGraph" -LogId $LogId
-            Write-Host "Setting path back to scriptroot and calling Connect-MSIntuneGraph"
-            Set-Location $StartingPoint
-            Connect-MSIntuneGraph -TenantID $TenantID
-
-            Write-Log -Message "Gathering Additional App Details" -LogId $LogId
-            # This will set defaults for description and publisher if one is not present in the application.
-            If ($Defaultapps.Description -like "" -or $null -eq $Defaultapps.Description) {
-                $Description = "Default"
-            }
-            else {
-                $Description = $Defaultapps.Description
-            }
-            If ($Defaultapps.Publisher -like "") {
-                $Publisher = "Default"
-            }
-            else {
-                $Publisher = $Defaultapps.Publisher
-            }
-
-            Write-Log -Message "Calling 'Add-IntuneWin32App' function to create Win32App in Intune" -LogId $LogId
-            If ($Null -eq $Icon) {
-                Add-IntuneWin32App -FilePath $IWFilePath -DisplayName $Defaultappsdt.ApplicationName -Description $description -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRuleFile -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Verbose
-                Write-Log -Message "Add-IntuneWin32App Command:"
-                Write-Log -Message 'Add-IntuneWin32App -FilePath $IWFilePath -DisplayName $Defaultappsdt.ApplicationName -Description $description -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRuleFile -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Verbose'
-            }
-            Else {
-                Add-IntuneWin32App -FilePath $IWFilePath -DisplayName $Defaultappsdt.ApplicationName -Description $description -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRuleFile -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Icon $Icon -Verbose
-                Write-Log -Message "Add-IntuneWin32App Command:"
-                Write-Log -Message 'Add-IntuneWin32App -FilePath $IWFilePath -DisplayName $Defaultappsdt.ApplicationName -Description $description -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRuleFile -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Icon $Icon -Verbose'
-            }
+        If ($Defaultapps.Publisher -like "") {
+            $Publisher = "Default"
         }
-        #endregion
+        else {
+            $Publisher = $Defaultapps.Publisher
+        }
+
+        Write-Log -Message "Calling 'Add-IntuneWin32App' function to create Win32App in Intune" -LogId $LogId
+        If ($Null -eq $Icon) {
+            Add-IntuneWin32App -FilePath $IWFilePath -DisplayName $Defaultappsdt.ApplicationName -Description $description -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRuleFile -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Verbose
+            Write-Log -Message "Add-IntuneWin32App Command:"
+            Write-Log -Message 'Add-IntuneWin32App -FilePath $IWFilePath -DisplayName $Defaultappsdt.ApplicationName -Description $description -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRuleFile -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Verbose'
+        }
+        Else {
+            Add-IntuneWin32App -FilePath $IWFilePath -DisplayName $Defaultappsdt.ApplicationName -Description $description -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRuleFile -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Icon $Icon -Verbose
+            Write-Log -Message "Add-IntuneWin32App Command:"
+            Write-Log -Message 'Add-IntuneWin32App -FilePath $IWFilePath -DisplayName $Defaultappsdt.ApplicationName -Description $description -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRuleFile -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine -Icon $Icon -Verbose'
+        }
+    }
+    #endregion
 
     Get-ScriptEnd
-    }
-
+}
