@@ -2,12 +2,12 @@
 
 ## 3.0.0 - Alpha - 15/12/2003
 
-✅ Forked main repo
-✅ End to End solution to inventory and upload app to Intune.
-✅ Incorporated <https://github.com/MSEndpointMgr/IntuneWin32App> to handle upload to Intune.
-✅ Added several new functions.
-✅ Added additional detection data to CSV files.
-✅ CSV files will be force closed if they are still open when the script runs. (VSCode has issues with this.)
+✅ Forked main repo.  
+✅ End to End solution to inventory and upload app to Intune.  
+✅ Incorporated <https://github.com/MSEndpointMgr/IntuneWin32App> to handle upload to Intune.  
+✅ Added several new functions.  
+✅ Added additional detection data to CSV files.  
+✅ CSV files will be force closed if they are still open when the script runs. (VSCode has issues with this.)  
 
 ## 2.0.18 - BETA - 25/11/2023
   
