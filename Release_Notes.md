@@ -1,10 +1,19 @@
 # Win32App Migration Tool - Release Notes
 
+## 3.0.0 - Alpha - 15/12/2003
+
+✅ Forked main repo
+✅ End to End solution to inventory and upload app to Intune.
+✅ Incorporated <https://github.com/MSEndpointMgr/IntuneWin32App> to handle upload to Intune.
+✅ Added several new functions.
+✅ Added additional detection data to CSV files.
+✅ CSV files will be force closed if they are still open when the script runs. (VSCode has issues with this.)
+
 ## 2.0.18 - BETA - 25/11/2023
   
-✅ Fixed https://github.com/byteben/Win32App-Migration-Tool/issues/7  
-✅ Fixed https://github.com/byteben/Win32App-Migration-Tool/issues/4  
-✅ Fixed https://github.com/byteben/Win32App-Migration-Tool/issues/13  
+✅ Fixed <https://github.com/byteben/Win32App-Migration-Tool/issues/7>  
+✅ Fixed <https://github.com/byteben/Win32App-Migration-Tool/issues/4>  
+✅ Fixed <https://github.com/byteben/Win32App-Migration-Tool/issues/13>  
 
 ## 2.0.17 - BETA - 12/11/2023
   
@@ -46,7 +55,7 @@
 ✅ Fixed a grammar issue when creating the Working Folders  
   
 ## 1.03.25.01 - BETA - 25/03/2021
- 
+
 ✅ Removed duplicate name in message for successful .intunewin creation  
 ✅ Added a new switch "-NoOGV" which will suppress the Out-Grid view. Thanks @philschwan  
 ✅ Fixed an issue where the -ResetLog parameter was not working  
