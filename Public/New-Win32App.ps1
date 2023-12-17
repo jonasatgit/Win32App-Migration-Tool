@@ -132,21 +132,6 @@ function New-Win32App {
     # Create global variable(s) 
     $global:workingFolder_Root = $workingFolder
 
-    <# Locate all the public and private function specific files
-    $Functions = Get-ChildItem -Path 'C:\cc\Old\Win32App-Migration-Tool-main (1)\Win32App-Migration-Tool-main\Functions' -Filter "*.ps1"  -recurse -ErrorAction SilentlyContinue
-    
-    # Dot source the function files
-    foreach ($FunctionFile in $Functions) {
-        try {
-            . $FunctionFile.FullName -ErrorAction Stop
-        }
-        catch [System.Exception] {
-            Write-Error -Message "Failed to import function '$($FunctionFile.FullName)' with error: $($_.Exception.Message)"
-            exit 1
-        }
-    }
-    #>
-
     #region Prepare_Workspace
     # Initialize folders to prepare workspace for logging
     Write-Host "Initializing required folders..." -ForegroundColor Cyan
