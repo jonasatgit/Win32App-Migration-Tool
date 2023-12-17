@@ -1,7 +1,7 @@
-**Update 12/15/2023 - Casey Clifton
+# Update 12/15/2023 - Casey Clifton
 
-I have combined Win32App-Migration-Tool with IntuneWin32App (https://github.com/MSEndpointMgr/IntuneWin32App) and created detection method functions to allow a fully automated method to upload ConfigMgr apps to your Intune tenant.
-Most of the code in the detection methods functions came from Paul Wetters DocumentCMCB (https://github.com/paulwetter/DocumentConfigMgrCB)
+I have combined Win32App-Migration-Tool with IntuneWin32App (<https://github.com/MSEndpointMgr/IntuneWin32App>) and created detection method functions to allow a fully automated method to upload ConfigMgr apps to your Intune tenant.
+Most of the code in the detection methods functions are based on Paul Wetters DocumentCMCB (<https://github.com/paulwetter/DocumentConfigMgrCB>).
 
 MSAL.PS, IntuneWin32App, and Connect-MSIntuneGraph will be installed by the script.
 You must have the appropriate access in both ConfigMgr and Intune.
@@ -10,7 +10,7 @@ Example: New-Win32App -SiteCode 'ABC' -ProviderMachineName 'siteserver' -AppName
 
 ____________________________________________________________________________________________________________________________________________________________________
 
-# Win32App Migration Tool
+## Win32App Migration Tool
 
  ![alt text](https://byteben.com/bb/Downloads/GitHub/Win32AppMigrationTool_10.jpg)  
 
@@ -19,7 +19,7 @@ ________________________________________________________________________________
 The Win32 App Migration Tool is designed to inventory ConfigMgr Applications and Deployment Types, build .intunewin files and create Win3Apps in The Intune Admin Center.  
 Instead of manually checking Application and Deployment Type information and gathering content to build Win32apps, the Win32App Migration Tool is designed to do that for you.
   
-**Blog Post** https://msendpointmgr.com/2021/03/27/automatically-migrate-applications-from-configmgr-to-intune-with-the-win32app-migration-tool/
+**Blog Post** <https://msendpointmgr.com/2021/03/27/automatically-migrate-applications-from-configmgr-to-intune-with-the-win32app-migration-tool/>
   
 ## Development Status
 
@@ -42,9 +42,7 @@ Instead of manually checking Application and Deployment Type information and gat
   **2. New-Win32App**  -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *"  
   **3. Use Information from the CSVs to build a Win32App in Intune**
 
-  ```
-  New-Win32App [-SiteCode] <String> [[-ProviderMachineName] <String>] [[-AppName] <String[]>]
-  ```
+  New-Win32App [-SiteCode] String [-ProviderMachineName] String [-AppName] String
 
 The current release of the Win32 App Migration Tool will do the following:-  
   
@@ -100,7 +98,7 @@ Accept wildcard characters: False
 
 ### -Parameter AppName
 
-Pass an app name to search for matching applications in ConfigMgr. You can use * as a wildcard e.g. "Microsoft*" or "\*Reader"
+Pass an app name to search for matching applications in ConfigMgr. You can use _as a wildcard e.g. "Microsoft_" or "\*Reader"
 
 ```yaml
 Type: String
@@ -278,7 +276,7 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Parameter NoOgv
+### -Parameter NoOgv (1)
 
 When passed, the Out-Gridview is suppressed and the value entered for $AppName will be searched using Get-CMApplication -Fast
 
@@ -295,30 +293,20 @@ Accept wildcard characters: False
   
 ## Examples  
   
-  ```
 New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *"
-  ```
-  ```
+
 New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *" -DownloadContent  
-  ```
-  ```
+
 New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *" -ExportLogo  
-  ```
-  ```
+
 New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *" -ExportLogo -PackageApps  
-  ```
-  ```
+
 New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *" -ExportLogo -PackageApps -CreateApps  
-  ```
-  ```
+
 New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *" -ExportLogo -PackageApps -CreateApps -ResetLog  
-  ```
-  ```
+
 New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *" -ExportLogo -PackageApps -CreateApps -ResetLog -NoOGV  
-  ```
-  ```
+
 New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *" -ExportLogo -PackageApps -CreateApps -ResetLog -ExcludePMPC
-  ```
-  ```
-New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium *" -ExportLogo -PackageApps -CreateApps -ResetLog -ExcludePMPC -ExcludeFilter "Microsoft*" 
-  ```  
+
+New-Win32App -SiteCode "BB1" -ProviderMachineName "SCCM1.byteben.com" -AppName "Microsoft Edge Chromium*" -ExportLogo -PackageApps -CreateApps -ResetLog -ExcludePMPC -ExcludeFilter "Microsoft*"
