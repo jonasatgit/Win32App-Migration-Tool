@@ -6,7 +6,7 @@ Most of the code in the detection methods functions are based on Paul Wetters Do
 MSAL.PS, IntuneWin32App, and Connect-MSIntuneGraph will be installed by the script.
 You must have the appropriate access in both ConfigMgr and Intune.
 
-Example: New-Win32App -SiteCode 'ABC' -ProviderMachineName 'siteserver' -AppName 'google chrome' -TenantID 'tenantid' -DownloadContent -CreateApps -ExportIcon
+Example: New-Win32App -SiteCode 'ABC' -ProviderMachineName 'siteserver' -AppName 'google chrome' -TenantID 'tenantid' -DownloadContent -CreateApps -ExportIcon -UploadtoIntune
 
 ____________________________________________________________________________________________________________________________________________________________________
 
