@@ -479,7 +479,7 @@ function New-Win32App {
 
         ## Need to see if New-IntuneWin can handle multiple detection methods. There is a function to add addtional detection methods
         Write-Log -Message "Creating Least Restrictive Requirement Rule"  -LogId $LogId
-        $RequirementRule = New-IntuneWin32AppRequirementRule -Architecture All -MinimumSupportedWindowsRelease 1607 -MinimumFreeDiskSpaceInMB 100 -MinimumMemoryInMB 100 -MinimumNumberOfProcessors 1 -MinimumCPUSpeedInMHz 100
+        $RequirementRule = New-IntuneWin32AppRequirementRule -Architecture All -MinimumSupportedWindowsRelease W10_1607 -MinimumFreeDiskSpaceInMB 100 -MinimumMemoryInMB 100 -MinimumNumberOfProcessors 1 -MinimumCPUSpeedInMHz 100
 
         Write-Host ""
         Write-Host "Running Build-DetectionData" -ForegroundColor Magenta
