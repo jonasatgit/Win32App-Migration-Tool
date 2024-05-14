@@ -4,6 +4,10 @@ Created on:   14/03/2021
 Created by:   Ben Whitmore
 Updated on:   12/15/2023
 Updated by:   Casey Clifton
+Updated on:   14/05/2024
+Updated by:   https://github.com/jonasatgit
+
+Did some changes to module install and Graph auth
 
 Filename:     New-Win32App.ps1
 
@@ -101,7 +105,7 @@ function New-Win32App {
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, HelpMessage = 'ExportIcon: When passed, the Application icon is decoded from base64 and saved to the Logos folder')]
         [Switch]$ExportIcon,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, Position = 3, HelpMessage = 'The working folder for the Win32AppMigration Tool. Care should be given when specifying the working folder because downloaded content can increase the working folder size considerably')]
-        [string]$workingFolder = "C:\Win32AppMigrationTool",
+        [string]$workingFolder,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, HelpMessage = 'PackageApps: Pass this parameter to package selected apps in the .intunewin format')]
         [Bool]$PackageApps = $True,
         [Parameter(Mandatory = $false, ValueFromPipeline = $false, HelpMessage = 'CreateApps: Pass this parameter to create the Win32apps in Intune')]
@@ -122,12 +126,25 @@ function New-Win32App {
         [string]$Publisher = 'Default',
         [Parameter(Mandatory = $False, Position = 8, HelpMessage = 'Add a default description in case the application does not have one.')]
         [string]$Description = 'Default',
-        [Parameter(Mandatory = $True, Position = 9, HelpMessage = 'The Tenant ID of the Azure AD Tenant')]
+        [Parameter(Mandatory = $false, Position = 9, HelpMessage = 'The Tenant ID of the Azure AD Tenant')]
         [string]$TenantID,
         [Parameter(Mandatory = $false, Position = 10, HelpMessage = 'UploadtoIntune: Pass this parameter to upload your app to Intune.')]
-        [Switch]$UploadtoIntune
+        [Switch]$UploadtoIntune,
+        [Parameter(Mandatory = $false, Position = 11, HelpMessage = 'EntraIDAppID: ID of Entra App to get access token from')]
+        [string]$EntraIDAppID = '14d82eec-204b-4c2f-b7e8-296a70dab67e' # <- "Microsoft Graph Command Line Tools"
 
     )
+
+    if ([string]::IsNullOrEmpty($workingFolder))
+    {
+        $workingFolder = '{0}\Win32AppMigrationTool' -f $PSScriptRoot
+    }
+
+    # Validate path and create if not there yet
+    if (-not (Test-Path $workingFolder)) 
+    {
+        New-Item -ItemType Directory -Path $workingFolder -Force | Out-Null
+    }
 
     # Create global variable(s) 
     $global:workingFolder_Root = $workingFolder
@@ -152,48 +169,63 @@ function New-Win32App {
     }
     #endregion
 
+
     Write-Log -Message "Checking to see if the current session is elevated"  -LogId $LogId
     Write-Host "Checking to see if the current session is elevated" -ForegroundColor Yellow
-    $user = [Security.Principal.WindowsIdentity]::GetCurrent();
-    $ISElevated = (New-Object Security.Principal.WindowsPrincipal $user).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 
-    #Check for MSAL.PS and install if not present
-    $GIM = get-installedmodule 
+    #region admin rights
+    #Ensure that the Script is running with elevated permissions
+    if(-not ([System.Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator))
+    {
+        Write-Warning 'The process needs admin rights to run. Please re-run the process with admin rights.' 
+        Read-Host -Prompt "Press any key to exit"
+        Exit 0 
+    }
+    else 
+    {
+        Write-Host "Session is elevated" -ForegroundColor Gray
+    }
+    #endregion
 
-    If (!($GIM | Where-Object { $_.Name -like 'MSAL*' })) {
-        If ($ISElevated) { 
-            Write-Log -Message "MSAL.PS Module Not Found. Installing for system." -LogId $LogId
-            Write-Host "MSAL.PS Module Not Found. Installing for system."
-            Install-Module MSAL.PS -Force -ErrorAction Stop
-        }
-        Else { 
-            Write-Log -Message "MSAL.PS Module Not Found. Session is not elevated. Installing as user scope." -LogId $LogId
-            Write-Host "MSAL.PS Module Not Found. Session is not elevated. Installing as user scope."
-            Install-Module MSAL.PS -Force -Scope CurrentUser -ErrorAction Stop
-        }
+    $listOfRequiredModules = [ordered]@{
+        'Microsoft.Graph.Authentication' = ''
+        #'MSAL.PS'  # Will be installed with forIntuneWin32App
+        'IntuneWin32App' = ''
     }
-    Else {
-        Write-Log -Message "MSAL.PS Module already installed." -LogId $LogId
-        Write-Host "MSAL.PS Module already installed." -ForegroundColor Green
+
+
+    #region Import nuget before anyting else
+    [version]$minimumVersion = '2.8.5.201'
+    $nuget = Get-PackageProvider -ErrorAction Ignore | Where-Object {$_.Name -ieq 'nuget'} # not using -name parameter du to autoinstall question
+    if (-Not($nuget))
+    {   
+        Write-Host "Need to install NuGet" -ForegroundColor Gray
+        # Changed to MSI installer as the old way could not be enforced and needs to be approved by the user
+        # Install-PackageProvider -Name NuGet -MinimumVersion $minimumVersion -Force
+        $null = Find-PackageProvider -Name NuGet -ForceBootstrap -IncludeDependencies -MinimumVersion $minimumVersion -Force
     }
-        
-    #Check for IntuneWin32App and install if not present
-    If (!($GIM | Where-Object { $_.Name -like 'IntuneWin32App' })) {
-        If ($ISElevated) {
-            Write-Log -Message "IntuneWin32App Module Not Found. Installing for system." -LogId $LogId
-            Write-Host "IntuneWin32App Module Not Found. Installing for system."
-            Install-Module IntuneWin32App -Force -ErrorAction Stop
-        }
-        Else { 
-            Write-Log -Message "IntuneWin32App Module Not Found. Session is not elevated. Installing as user scope." -LogId $LogId
-            Write-Host "IntuneWin32App Module Not Found. Session is not elevated. Installing as user scope."
-            Install-Module IntuneWin32App -Force -Scope CurrentUser -ErrorAction Stop
-        }
+
+
+    # Install and or import modules 
+    $listOfInstalledModules = Get-InstalledModule -ErrorAction SilentlyContinue
+    foreach ($module in $listOfRequiredModules.GetEnumerator())
+    {   
+        if (-NOT($listOfInstalledModules | Where-Object {$_.Name -ieq $module.Name}))    
+        {   
+            Write-Host "Need to install $($module.Name)" -ForegroundColor Gray 
+            #Write-Host "Module $($module.Name) not installed yet. Will be installed"
+            if (-NOT([string]::IsNullOrEmpty($module.Value)))
+            {
+                Install-Module $module.Name -Force -RequiredVersion $module.Value
+            }
+            else 
+            {
+                Install-Module $module.Name -Force
+            }               
+        }     
     }
-    Else {
-        Write-Log -Message "IntuneWin32App Module already installed." -LogId $LogId
-        Write-Host "IntuneWin32App Module already installed." -ForegroundColor Green
-    }
+
+    
        
     #I like my path to return to its original location post script execution
     $StartingPoint = get-location
@@ -522,7 +554,24 @@ function New-Win32App {
         Write-Log -Message "Setting path back to scriptroot and calling Connect-MSIntuneGraph" -LogId $LogId
         Write-Host "Setting path back to scriptroot and calling Connect-MSIntuneGraph"
         Set-Location $StartingPoint
-        Connect-MSIntuneGraph -TenantID $TenantID
+
+        # Connet to Graph with native PowerShell command and request DeviceManagementApps.ReadWrite.All permisson
+        # If permission is not set, user will be prompted
+        Connect-MgGraph -Scopes 'DeviceManagementApps.ReadWrite.All'
+        Start-Sleep -Seconds 5
+        # Now connect with Connect-MSIntuneGraph (required for win32app module) using the same app ID to get proper permissions
+        Connect-MSIntuneGraph -TenantID $TenantID -ClientID $EntraIDAppID
+
+        # We might need to wait for the permissions to be active
+        # So lets test the token for the correct scope
+        $decodedJwt = Get-DecodedJwt -token $Global:AuthenticationHeader.Authorization
+
+        if (-not ($decodedJwt.scp -imatch 'DeviceManagementApps.ReadWrite.All'))
+        {
+            Write-Log -Message "Entra ID App `"$EntraIDAppID`" does not have `"DeviceManagementApps.ReadWrite.All`" permissions yet. Will wait 30 seconds" -LogId $LogId
+            Start-Sleep -Seconds 30
+            Connect-MSIntuneGraph -TenantID $TenantID -ClientID $EntraIDAppID -Refresh    
+        }
 
         Write-Log -Message "Gathering Additional App Details" -LogId $LogId
         # This will set defaults for description and publisher if one is not present in the application.
